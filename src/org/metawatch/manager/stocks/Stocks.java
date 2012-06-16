@@ -22,15 +22,23 @@ import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 public class Stocks extends Activity {
 	
 	public static final String TAG = "Stock-MWM";
 	
-	private static String symbols = "GOOG+AAPL+FB+RRS.L+BARC.L+BMW.DE+NDA-DKK.CO+0005.HK+DLEN.TA";
+	private static String symbols = "GOOG\nAAPL\nFB\nTXN\nSRP.F\nFOSL";
 	
     /** Called when the activity is first created. */
     @Override
@@ -38,10 +46,45 @@ public class Stocks extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         
-        TextView textView = (TextView) findViewById(R.id.textview);
-        textView.setText("");
+		final SharedPreferences sharedPreferences = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		
+		symbols = sharedPreferences.getString("symbols", symbols);
         
-        HashMap<String, List<String>> values = get(this);
+        final EditText editText = (EditText) findViewById(R.id.editText1);
+        editText.setText(symbols);
+        
+        final TextView textView = (TextView) findViewById(R.id.textview);
+        textView.setText("");
+
+        Button searchButton = (Button) findViewById(R.id.button2);
+        searchButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://m.yahoo.com/finance"));
+				startActivity(browserIntent);					
+			};
+        });      
+        
+        Button refreshButton = (Button) findViewById(R.id.button1);
+        refreshButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				symbols = editText.getText().toString();
+				
+				Editor editor = sharedPreferences.edit();
+
+				editor.putString("symbols", symbols);
+				editor.commit();
+				
+				textView.setText("Refreshing...\n\n");
+				refresh(textView);						
+			};
+        });
+        
+        refresh(textView);
+    }
+
+	private void refresh(final TextView textView) {
+		HashMap<String, List<String>> values = get(this);
         
 		for (HashMap.Entry<String, List<String>> entry : values.entrySet()) {
 			for (String part : entry.getValue()) {
@@ -53,7 +96,7 @@ public class Stocks extends Activity {
         
     	if (values!=null)
     		Widget.update(this, values);
-    }
+	}
     
     public static HashMap<String, List<String>> get(Context context) {
     	// See: http://www.gummy-stuff.org/Yahoo-data.htm
@@ -62,7 +105,7 @@ public class Stocks extends Activity {
     	
     	StringBuilder url = new StringBuilder();
     	url.append("http://finance.yahoo.com/d/quotes.csv?s=");
-    	url.append(symbols);
+    	url.append(symbols.replace(" ", "+").replace("\n", "+"));
     	url.append("&f=sl1");
     	
     	values = getCSVfromURL(context, url.toString());
