@@ -30,7 +30,13 @@ public class Widget extends BroadcastReceiver  {
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		Log.d(Stocks.TAG, "onReceive()");
+		String action = intent.getAction();
+		Log.d(Stocks.TAG, "onReceive() " + action);
+		
+		if (Stocks.isCacheOld(context)) {
+			Log.d(Stocks.TAG, "Stock data out of date - refreshing");
+			Stocks.refresh(context);
+		}
 		
 		HashMap<String, List<String>> stockData = Stocks.getCached(context);
 		if (stockData==null) {
@@ -40,7 +46,6 @@ public class Widget extends BroadcastReceiver  {
 
 		Log.d(Stocks.TAG, "Cache data contains "+stockData.size()+" entries");
 		
-		String action = intent.getAction();
 		if (action !=null && action.equals("org.metawatch.manager.REFRESH_WIDGET_REQUEST")) {
 
 			Log.d(Stocks.TAG, "Received intent");
@@ -65,6 +70,7 @@ public class Widget extends BroadcastReceiver  {
 				}
 			}
 		}
+		
 	}
 	
 	public synchronized static void update(Context context, HashMap<String, List<String>> data) {

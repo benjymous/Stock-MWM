@@ -39,6 +39,7 @@ public class Stocks extends Activity {
 	public static final String TAG = "Stock-MWM";
 	
 	private static String symbols = "GOOG\nAAPL\nFB\nTXN\nSRP.F\nFOSL";
+	private static long refreshInterval = 1000 * 60 * 30;
 	
     /** Called when the activity is first created. */
     @Override
@@ -65,6 +66,8 @@ public class Stocks extends Activity {
 			};
         });      
         
+        final Context context = this;
+        
         Button refreshButton = (Button) findViewById(R.id.button1);
         refreshButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
@@ -75,25 +78,28 @@ public class Stocks extends Activity {
 				editor.putString("symbols", symbols);
 				editor.commit();
 				
-				refresh(textView);
+				refresh(context, textView);
 									
 			};
         });
         
-        refresh(textView);
+        refresh(context, textView);
     }
 
+    public static void refresh(Context context) {
+    	refresh(null);
+    }
+    
     static Thread updateThread = null;
-	private void refresh(final TextView textView) {
+	private static void refresh(final Context context, final TextView textView) {
 		
 		if (updateThread!=null) {
 			Log.d(Stocks.TAG, "Refresh already running.");
 			return;
 		}
 		
-		textView.setText("Refreshing...\n\n");
-		
-		final Context context = this;
+		if (textView!=null)
+			textView.setText("Refreshing...\n\n");
 		
 		updateThread = new Thread("StocksUpdate") {
 			@Override
@@ -101,21 +107,21 @@ public class Stocks extends Activity {
 		
 				final HashMap<String, List<String>> values = Stocks.get(context);
 		        
-				refresh(textView);	
-				
-				runOnUiThread(new Runnable() {
-				     public void run() {
-
-				    	textView.setText("");
-						for (HashMap.Entry<String, List<String>> entry : values.entrySet()) {
-							for (String part : entry.getValue()) {
-								textView.append(part);
-								textView.append(" ");
+				if (textView!=null) {
+					((Activity)(context)).runOnUiThread(new Runnable() {
+					     public void run() {
+	
+					    	textView.setText("");
+							for (HashMap.Entry<String, List<String>> entry : values.entrySet()) {
+								for (String part : entry.getValue()) {
+									textView.append(part);
+									textView.append(" ");
+								}
+								textView.append("\n");
 							}
-							textView.append("\n");
-						}
-				    }
-				});
+					    }
+					});
+				}
 		        
 		    	if (values!=null)
 		    		Widget.update(context, values);
@@ -188,6 +194,20 @@ public class Stocks extends Activity {
 		ArrayList<String> lines = readCSV(is);
 		cacheCSVData(context, lines);	
 		return parseCSVData(lines);
+	}
+	
+	public static boolean isCacheOld(final Context context) {
+		final File cache = getCacheFile(context);
+		if (!cache.exists())
+			return true;
+		
+		final long lastMod = cache.lastModified();
+		final long now = System.currentTimeMillis();
+		
+		final long age = now-lastMod;
+		Log.d(Stocks.TAG, "Cache is "+age+ "ms old");
+		
+		return age > refreshInterval;
 	}
 	
 	private static File getCacheFile(Context context) {
