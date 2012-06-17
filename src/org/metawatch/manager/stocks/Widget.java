@@ -76,7 +76,7 @@ public class Widget extends BroadcastReceiver  {
 	}
 
 	private synchronized static void genWidget(Context context, String id, List<String> values) {
-		Log.d(Stocks.TAG, "genWidget() start");
+		Log.d(Stocks.TAG, "genWidget() start - "+id);
 		
 		if (typeface==null) {
 			typeface = Typeface.createFromAsset(context.getAssets(), "metawatch_8pt_5pxl_CAPS.ttf");

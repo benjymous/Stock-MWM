@@ -75,27 +75,59 @@ public class Stocks extends Activity {
 				editor.putString("symbols", symbols);
 				editor.commit();
 				
-				textView.setText("Refreshing...\n\n");
-				refresh(textView);						
+				refresh(textView);
+									
 			};
         });
         
         refresh(textView);
     }
 
+    static Thread updateThread = null;
 	private void refresh(final TextView textView) {
-		HashMap<String, List<String>> values = get(this);
-        
-		for (HashMap.Entry<String, List<String>> entry : values.entrySet()) {
-			for (String part : entry.getValue()) {
-				textView.append(part);
-				textView.append(" ");
-			}
-			textView.append("\n");
+		
+		if (updateThread!=null) {
+			Log.d(Stocks.TAG, "Refresh already running.");
+			return;
 		}
-        
-    	if (values!=null)
-    		Widget.update(this, values);
+		
+		textView.setText("Refreshing...\n\n");
+		
+		final Context context = this;
+		
+		updateThread = new Thread("StocksUpdate") {
+			@Override
+			public void run() {
+		
+				final HashMap<String, List<String>> values = Stocks.get(context);
+		        
+				refresh(textView);	
+				
+				runOnUiThread(new Runnable() {
+				     public void run() {
+
+				    	textView.setText("");
+						for (HashMap.Entry<String, List<String>> entry : values.entrySet()) {
+							for (String part : entry.getValue()) {
+								textView.append(part);
+								textView.append(" ");
+							}
+							textView.append("\n");
+						}
+				    }
+				});
+		        
+		    	if (values!=null)
+		    		Widget.update(context, values);
+				
+				updateThread = null;
+			}
+			
+			
+		};
+		
+		updateThread.start();
+		
 	}
     
     public static HashMap<String, List<String>> get(Context context) {
