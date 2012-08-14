@@ -93,7 +93,7 @@ public class Stocks extends Activity {
     }
 
     public static void refresh(Context context) {
-    	refresh(null);
+    	refresh(context, null);
     }
     
     static Thread updateThread = null;
