@@ -20,6 +20,8 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 
+import com.bugsense.trace.BugSenseHandler;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -41,11 +43,15 @@ public class Stocks extends Activity {
 	private static String symbols = "GOOG\nAAPL\nFB\nTXN\nSRP.F\nFOSL";
 	private static long refreshInterval = 1000 * 60 * 30;
 	
+	private static boolean bugSenseInitialised = false;
+	
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+        
+        initBugSense(this);
         
 		final SharedPreferences sharedPreferences = PreferenceManager
 				.getDefaultSharedPreferences(this);
@@ -277,5 +283,37 @@ public class Stocks extends Activity {
 			Log.e(Stocks.TAG, "Error parsing " + e.toString());
 		}
 		return csvMap;
+	}
+	
+	static void initBugSense(Context context) {
+	
+		if (bugSenseInitialised)
+			return;
+		
+		bugSenseInitialised = true;
+		
+	    // If you want to use BugSense for your fork, register with them
+	    // and place your API key in /assets/bugsense.txt
+	    // (This prevents me receiving reports of crashes from forked versions
+	    // which is somewhat confusing!)      
+	    try {
+			InputStream inputStream = context.getAssets().open("bugsense.txt");
+			String key = ReadInputStream(inputStream);
+			key=key.trim();
+			Log.d(TAG, "BugSense enabled");
+			BugSenseHandler.setup(context, key);
+		} catch (IOException e) {
+			Log.d(TAG, "No BugSense keyfile found");
+		}
+    
+	}
+	
+	static String ReadInputStream(InputStream in) throws IOException {
+		StringBuffer stream = new StringBuffer();
+		byte[] b = new byte[4096];
+		for (int n; (n = in.read(b)) != -1;) {
+			stream.append(new String(b, 0, n));
+		}
+		return stream.toString();
 	}
 }

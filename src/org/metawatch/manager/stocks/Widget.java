@@ -31,6 +31,11 @@ public class Widget extends BroadcastReceiver  {
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		String action = intent.getAction();
+		
+
+        Stocks.initBugSense(context);
+
+		
 		Log.d(Stocks.TAG, "onReceive() " + action);
 		
 		if (Stocks.isCacheOld(context)) {
